@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart'; // Pastikan file ini berada di direktori yang benar
+import 'pages/login_page.dart'; // Pastikan file ini berada di direktori yang benar
 
 void main() {
   runApp(const MainApp());
