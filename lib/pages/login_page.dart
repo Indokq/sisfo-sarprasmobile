@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
+import 'homePages.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -34,14 +35,22 @@ class _LoginPageState extends State<LoginPage> {
       final data = jsonDecode(response.body);
       final token = data['access_token'];
       print('Login berhasil! Token: $token');
-      // Navigate to next screen if needed
-    } else {
+
+      // Redirect ke HomePage dengan token
+    if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomePage(token: token),
+        ),
+      );
+    }else {
       final data = jsonDecode(response.body);
       print('Login gagal: ${data['message']}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Login gagal: ${data['message']}')),
       );
-    }
+  }
 
     setState(() {
       _isLoading = false;
@@ -117,14 +126,14 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         onPressed: _isLoading ? null : _login,
                         child: _isLoading
-                            ? const CircularProgressIndicator(color: Color.fromARGB(255, 255, 255, 255))
+                            ? const CircularProgressIndicator(
+                                color: Color.fromARGB(255, 255, 255, 255))
                             : Text(
                                 'Login',
                                 style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white
-                                ),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white),
                               ),
                       ),
                     ),
