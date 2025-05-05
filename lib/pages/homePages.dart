@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sisfo_sarpras/pages/tabs/peminjaman_view.dart';
 import 'tabs/barang_view.dart';
 
 
@@ -24,6 +25,7 @@ class HomePages extends StatelessWidget {
         body: TabBarView(
           children: [
             BarangView(token: token),
+            PeminjamanView(token: token)
           ],
         ),
       ),

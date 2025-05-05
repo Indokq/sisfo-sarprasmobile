@@ -55,7 +55,7 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Terjadi kesalahan. Coba lagi nanti.')),
+        const SnackBar(content: Text('Password Salah Atau Email Salah')),
       );
     } finally {
       if (mounted) {
