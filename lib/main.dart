@@ -10,9 +10,14 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false, // Opsional: hilangkan label debug
-      home: LoginPage(),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      routes: {
+        '/login': (context) => const LoginPage(),
+        // Rute lainnya bisa ditambahkan di sini jika ada
+      },
+      home: const LoginPage(),
     );
   }
 }
+
