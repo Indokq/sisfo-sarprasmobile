@@ -7,7 +7,7 @@ class Peminjaman {
   final int jumlah;
   final String tanggalPinjam;
   final String status;
-
+  final String? namaBarang; // Tambahkan field untuk nama barang
 
   Peminjaman({
     required this.id,
@@ -18,9 +18,22 @@ class Peminjaman {
     required this.jumlah,
     required this.tanggalPinjam,
     required this.status,
+    this.namaBarang, // Opsional, mungkin tidak selalu tersedia dari API
   });
 
   factory Peminjaman.fromJson(Map<String, dynamic> json) {
+    // Coba ambil nama barang jika tersedia di response API
+    String? namaBarang;
+    if (json.containsKey('barang') && json['barang'] != null) {
+      // Jika ada objek barang di response
+      if (json['barang'] is Map) {
+        namaBarang = json['barang']['nama_barang'];
+      }
+    } else if (json.containsKey('nama_barang')) {
+      // Jika nama barang langsung di level atas
+      namaBarang = json['nama_barang'];
+    }
+
     return Peminjaman(
       id: json['id'],
       userId: json['user_id'],
@@ -30,6 +43,7 @@ class Peminjaman {
       jumlah: json['jumlah'],
       tanggalPinjam: json['tanggal_pinjam'],
       status: json['status'],
+      namaBarang: namaBarang,
     );
   }
 }

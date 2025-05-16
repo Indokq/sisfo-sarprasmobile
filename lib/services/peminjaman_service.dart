@@ -1,5 +1,6 @@
 // services/peminjaman_service.dart
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/peminjaman_model.dart';
 import 'auth_service.dart'; // import auth service
@@ -7,6 +8,7 @@ import 'auth_service.dart'; // import auth service
 class PeminjamanService {
   static const String baseUrl = 'http://127.0.0.1:8000/api/v1';
 
+  // Fungsi untuk membuat peminjaman baru
   static Future<Peminjaman> createPeminjaman({
     required String token,
     required String namaPeminjam,
@@ -44,6 +46,59 @@ class PeminjamanService {
       return Peminjaman.fromJson(json['data']);
     } else {
       throw Exception('Gagal membuat peminjaman: ${response.body}');
+    }
+  }
+
+  // Fungsi untuk mengambil riwayat peminjaman
+  static Future<List<Peminjaman>> fetchPeminjaman(String token) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/peminjaman'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final jsonData = jsonDecode(response.body);
+
+      // Debug: Print response untuk melihat struktur data
+      debugPrint('Peminjaman API response: ${response.body}');
+
+      if (jsonData['success'] == true) {
+        List data = jsonData['data'];
+        return data.map((item) => Peminjaman.fromJson(item)).toList();
+      } else {
+        throw Exception('Gagal fetch data peminjaman: ${jsonData['message']}');
+      }
+    } else {
+      throw Exception(
+          'Gagal fetch data peminjaman. Code: ${response.statusCode}');
+    }
+  }
+
+  // Fungsi untuk mengambil detail peminjaman berdasarkan ID
+  static Future<Peminjaman> fetchPeminjamanById(String token, int id) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/peminjaman/$id'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final jsonData = jsonDecode(response.body);
+
+      if (jsonData['success'] == true) {
+        return Peminjaman.fromJson(jsonData['data']);
+      } else {
+        throw Exception(
+            'Gagal fetch detail peminjaman: ${jsonData['message']}');
+      }
+    } else {
+      throw Exception(
+          'Gagal fetch detail peminjaman. Code: ${response.statusCode}');
     }
   }
 }
