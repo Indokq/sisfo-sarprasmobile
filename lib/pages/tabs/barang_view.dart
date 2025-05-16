@@ -260,8 +260,15 @@ class _BarangViewState extends State<BarangView> {
                     ],
                   ),
                 )
-              : ListView.builder(
+              : GridView.builder(
                   padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2, // 2 cards per row
+                    childAspectRatio:
+                        0.75, // Adjust this value to control card height
+                    crossAxisSpacing: 10, // Horizontal spacing between cards
+                    mainAxisSpacing: 10, // Vertical spacing between cards
+                  ),
                   itemCount: _filteredBarang.length,
                   itemBuilder: (context, index) {
                     return BarangCard(barang: _filteredBarang[index]);

@@ -252,8 +252,17 @@ class _RiwayatPeminjamanViewState extends State<RiwayatPeminjamanView> {
                                 )
                               : RefreshIndicator(
                                   onRefresh: _fetchPeminjaman,
-                                  child: ListView.builder(
+                                  child: GridView.builder(
                                     padding: const EdgeInsets.all(16),
+                                    gridDelegate:
+                                        const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 2, // 2 cards per row
+                                      childAspectRatio:
+                                          0.85, // Adjust for card height
+                                      crossAxisSpacing:
+                                          10, // Horizontal spacing
+                                      mainAxisSpacing: 10, // Vertical spacing
+                                    ),
                                     itemCount: _peminjaman.length,
                                     itemBuilder: (context, index) {
                                       final pinjam = _peminjaman[index];
@@ -273,82 +282,80 @@ class _RiwayatPeminjamanViewState extends State<RiwayatPeminjamanView> {
   // Widget untuk menampilkan card peminjaman
   Widget _buildPeminjamanCard(Peminjaman pinjam) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Status dan tanggal
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Status chip
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(pinjam.status).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: _getStatusColor(pinjam.status),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    pinjam.status.toUpperCase(),
-                    style: TextStyle(
-                      color: _getStatusColor(pinjam.status),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
+            // Status chip
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
+              decoration: BoxDecoration(
+                color: _getStatusColor(pinjam.status).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _getStatusColor(pinjam.status),
+                  width: 1,
                 ),
-
-                // Tanggal
-                Text(
-                  _formatDate(pinjam.tanggalPinjam),
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 14,
-                  ),
+              ),
+              child: Text(
+                pinjam.status.toUpperCase(),
+                style: TextStyle(
+                  color: _getStatusColor(pinjam.status),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
                 ),
-              ],
+              ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
 
             // Nama barang
             Text(
               _getBarangName(pinjam.barangId, peminjaman: pinjam),
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
 
-            const SizedBox(height: 8),
+            const Spacer(),
+
+            // Tanggal
+            Text(
+              _formatDate(pinjam.tanggalPinjam),
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 12,
+              ),
+            ),
+
+            const SizedBox(height: 4),
 
             // Jumlah
             Row(
               children: [
                 Icon(
                   Icons.numbers,
-                  size: 16,
+                  size: 14,
                   color: Colors.grey.shade600,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
                 Text(
                   'Jumlah: ${pinjam.jumlah}',
                   style: TextStyle(
                     color: Colors.grey.shade700,
+                    fontSize: 12,
                   ),
                 ),
               ],
@@ -361,14 +368,19 @@ class _RiwayatPeminjamanViewState extends State<RiwayatPeminjamanView> {
               children: [
                 Icon(
                   Icons.person,
-                  size: 16,
+                  size: 14,
                   color: Colors.grey.shade600,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Peminjam: ${pinjam.namaPeminjam}',
-                  style: TextStyle(
-                    color: Colors.grey.shade700,
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'Peminjam: ${pinjam.namaPeminjam}',
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
