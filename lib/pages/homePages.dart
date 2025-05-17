@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sisfo_sarpras/pages/tabs/peminjaman_view.dart';
+import 'package:sisfo_sarpras/pages/tabs/pengembalian_view.dart';
 import 'package:sisfo_sarpras/pages/tabs/riwayat_peminjaman_view.dart';
 import 'tabs/barang_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,6 +24,7 @@ class _HomePagesState extends State<HomePages> {
     _pages = [
       BarangView(token: widget.token),
       PeminjamanView(token: widget.token),
+      PengembalianView(token: widget.token),
       RiwayatPeminjamanView(token: widget.token),
     ];
   }
@@ -54,22 +56,36 @@ class _HomePagesState extends State<HomePages> {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 4,
-        title: const Text(
-          'SARPRAS',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.indigo,
-            letterSpacing: 1.2,
-          ),
+        backgroundColor: Colors.black,
+        elevation: 0,
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.inventory_2_outlined,
+              color: Colors.white,
+              size: 24,
+            ),
+            SizedBox(width: 8),
+            Text(
+              'SARPRAS',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
         ),
         centerTitle: true,
         actions: [
           PopupMenuButton<String>(
-            icon: const Icon(Icons.account_circle,
-                color: Colors.indigo, size: 30),
+            icon: const Icon(
+              Icons.account_circle,
+              color: Colors.white,
+              size: 30,
+            ),
             onSelected: (value) {
               if (value == 'logout') {
                 _logout();
@@ -98,15 +114,15 @@ class _HomePagesState extends State<HomePages> {
         ),
         child: ClipRRect(
           borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(16),
           ),
           child: BottomNavigationBar(
             currentIndex: _selectedIndex,
             onTap: _onItemTapped,
-            backgroundColor: Colors.white,
-            selectedItemColor: Colors.indigo.shade700,
-            unselectedItemColor: Colors.grey.shade600,
+            backgroundColor: Colors.black,
+            selectedItemColor: Colors.white,
+            unselectedItemColor: Colors.grey.shade400,
             selectedLabelStyle: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 12,
@@ -127,6 +143,11 @@ class _HomePagesState extends State<HomePages> {
                 icon: Icon(Icons.assignment),
                 activeIcon: Icon(Icons.assignment, size: 28),
                 label: 'Peminjaman',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.assignment_return),
+                activeIcon: Icon(Icons.assignment_return, size: 28),
+                label: 'Pengembalian',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.history),
