@@ -49,11 +49,12 @@ class _PengembalianViewState extends State<PengembalianView> {
       final List<Peminjaman> fetchedPeminjaman =
           await PeminjamanService.fetchPeminjaman(widget.token);
 
-      // Filter peminjaman yang statusnya bukan 'returned', 'completed', atau 'rejected'
+      // Filter peminjaman yang statusnya bukan 'returned', 'completed', 'pending', atau 'rejected'
       final activePeminjaman = fetchedPeminjaman
           .where((p) =>
               p.status.toLowerCase() != 'returned' &&
               p.status.toLowerCase() != 'completed' &&
+              p.status.toLowerCase() != 'pending' &&
               p.status.toLowerCase() != 'rejected')
           .toList();
 
@@ -119,6 +120,20 @@ class _PengembalianViewState extends State<PengembalianView> {
         tanggal.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Harap isi semua field')),
+      );
+      return;
+    }
+
+    // Check if status is 'pending' or 'rejected'
+    if (selectedPeminjaman!.status.toLowerCase() == 'pending' ||
+        selectedPeminjaman!.status.toLowerCase() == 'rejected') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Tidak dapat membuat pengembalian untuk peminjaman dengan status "${selectedPeminjaman!.status}"'),
+          backgroundColor: Colors.red.shade700,
+          duration: const Duration(seconds: 3),
+        ),
       );
       return;
     }
@@ -292,7 +307,7 @@ class _PengembalianViewState extends State<PengembalianView> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Peminjaman dengan status "rejected" tidak dapat dikembalikan',
+                                    'Peminjaman dengan status "pending" atau "rejected" tidak dapat dikembalikan',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       color: Colors.orange.shade700,

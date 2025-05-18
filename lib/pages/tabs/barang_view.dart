@@ -260,18 +260,45 @@ class _BarangViewState extends State<BarangView> {
                     ],
                   ),
                 )
-              : GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2, // 2 cards per row
-                    childAspectRatio:
-                        0.75, // Adjust this value to control card height
-                    crossAxisSpacing: 10, // Horizontal spacing between cards
-                    mainAxisSpacing: 10, // Vertical spacing between cards
-                  ),
-                  itemCount: _filteredBarang.length,
-                  itemBuilder: (context, index) {
-                    return BarangCard(barang: _filteredBarang[index]);
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Calculate responsive values based on screen width
+                    final screenWidth = MediaQuery.of(context).size.width;
+
+                    // Determine number of columns based on screen width
+                    int crossAxisCount = 2; // Default for most phones
+                    if (screenWidth < 360) {
+                      crossAxisCount = 1; // Very small phones - single column
+                    } else if (screenWidth >= 600) {
+                      crossAxisCount = 3; // Tablets - 3 columns
+                    } else if (screenWidth >= 900) {
+                      crossAxisCount =
+                          4; // Large tablets/small desktops - 4 columns
+                    }
+
+                    // Calculate dynamic aspect ratio based on available width
+                    // This ensures cards have proper proportions on all devices
+                    final itemWidth = (constraints.maxWidth -
+                            (16 * 2) -
+                            ((crossAxisCount - 1) * 10)) /
+                        crossAxisCount;
+                    final aspectRatio = itemWidth /
+                        (itemWidth *
+                            1.4); // Adjust multiplier for desired height
+
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        childAspectRatio: aspectRatio,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                      ),
+                      itemCount: _filteredBarang.length,
+                      itemBuilder: (context, index) {
+                        return BarangCard(barang: _filteredBarang[index]);
+                      },
+                    );
                   },
                 ),
         ),

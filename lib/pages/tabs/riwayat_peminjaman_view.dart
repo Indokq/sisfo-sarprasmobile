@@ -252,21 +252,50 @@ class _RiwayatPeminjamanViewState extends State<RiwayatPeminjamanView> {
                                 )
                               : RefreshIndicator(
                                   onRefresh: _fetchPeminjaman,
-                                  child: GridView.builder(
-                                    padding: const EdgeInsets.all(16),
-                                    gridDelegate:
-                                        const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2, // 2 cards per row
-                                      childAspectRatio:
-                                          0.85, // Adjust for card height
-                                      crossAxisSpacing:
-                                          10, // Horizontal spacing
-                                      mainAxisSpacing: 10, // Vertical spacing
-                                    ),
-                                    itemCount: _peminjaman.length,
-                                    itemBuilder: (context, index) {
-                                      final pinjam = _peminjaman[index];
-                                      return _buildPeminjamanCard(pinjam);
+                                  child: LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      // Calculate responsive values based on screen width
+                                      final screenWidth =
+                                          MediaQuery.of(context).size.width;
+
+                                      // Determine number of columns based on screen width
+                                      int crossAxisCount =
+                                          2; // Default for most phones
+                                      if (screenWidth < 360) {
+                                        crossAxisCount =
+                                            1; // Very small phones - single column
+                                      } else if (screenWidth >= 600) {
+                                        crossAxisCount =
+                                            3; // Tablets - 3 columns
+                                      } else if (screenWidth >= 900) {
+                                        crossAxisCount =
+                                            4; // Large tablets/small desktops - 4 columns
+                                      }
+
+                                      // Calculate dynamic aspect ratio based on available width
+                                      final itemWidth = (constraints.maxWidth -
+                                              (16 * 2) -
+                                              ((crossAxisCount - 1) * 10)) /
+                                          crossAxisCount;
+                                      final aspectRatio = itemWidth /
+                                          (itemWidth *
+                                              1.3); // Adjust multiplier for desired height
+
+                                      return GridView.builder(
+                                        padding: const EdgeInsets.all(16),
+                                        gridDelegate:
+                                            SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: crossAxisCount,
+                                          childAspectRatio: aspectRatio,
+                                          crossAxisSpacing: 10,
+                                          mainAxisSpacing: 10,
+                                        ),
+                                        itemCount: _peminjaman.length,
+                                        itemBuilder: (context, index) {
+                                          final pinjam = _peminjaman[index];
+                                          return _buildPeminjamanCard(pinjam);
+                                        },
+                                      );
                                     },
                                   ),
                                 ),
@@ -281,21 +310,26 @@ class _RiwayatPeminjamanViewState extends State<RiwayatPeminjamanView> {
 
   // Widget untuk menampilkan card peminjaman
   Widget _buildPeminjamanCard(Peminjaman pinjam) {
+    // Get screen size for responsive design
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 360;
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(isSmallScreen ? 8.0 : 12.0),
         child: Column(
+          mainAxisSize: MainAxisSize.min, // Important for preventing overflow
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Status chip
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 4,
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmallScreen ? 6 : 8,
+                vertical: isSmallScreen ? 3 : 4,
               ),
               decoration: BoxDecoration(
                 color: _getStatusColor(pinjam.status).withOpacity(0.1),
@@ -310,18 +344,18 @@ class _RiwayatPeminjamanViewState extends State<RiwayatPeminjamanView> {
                 style: TextStyle(
                   color: _getStatusColor(pinjam.status),
                   fontWeight: FontWeight.bold,
-                  fontSize: 10,
+                  fontSize: isSmallScreen ? 9 : 10,
                 ),
               ),
             ),
 
-            const SizedBox(height: 8),
+            SizedBox(height: isSmallScreen ? 6 : 8),
 
             // Nama barang
             Text(
               _getBarangName(pinjam.barangId, peminjaman: pinjam),
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: isSmallScreen ? 14 : 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
@@ -336,48 +370,48 @@ class _RiwayatPeminjamanViewState extends State<RiwayatPeminjamanView> {
               _formatDate(pinjam.tanggalPinjam),
               style: TextStyle(
                 color: Colors.grey.shade600,
-                fontSize: 12,
+                fontSize: isSmallScreen ? 10 : 12,
               ),
             ),
 
-            const SizedBox(height: 4),
+            SizedBox(height: isSmallScreen ? 2 : 4),
 
             // Jumlah
             Row(
               children: [
                 Icon(
                   Icons.numbers,
-                  size: 14,
+                  size: isSmallScreen ? 12 : 14,
                   color: Colors.grey.shade600,
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: isSmallScreen ? 2 : 4),
                 Text(
                   'Jumlah: ${pinjam.jumlah}',
                   style: TextStyle(
                     color: Colors.grey.shade700,
-                    fontSize: 12,
+                    fontSize: isSmallScreen ? 10 : 12,
                   ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 4),
+            SizedBox(height: isSmallScreen ? 2 : 4),
 
             // Peminjam
             Row(
               children: [
                 Icon(
                   Icons.person,
-                  size: 14,
+                  size: isSmallScreen ? 12 : 14,
                   color: Colors.grey.shade600,
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: isSmallScreen ? 2 : 4),
                 Expanded(
                   child: Text(
                     'Peminjam: ${pinjam.namaPeminjam}',
                     style: TextStyle(
                       color: Colors.grey.shade700,
-                      fontSize: 12,
+                      fontSize: isSmallScreen ? 10 : 12,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
