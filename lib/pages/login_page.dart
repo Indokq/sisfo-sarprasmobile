@@ -166,17 +166,45 @@ class _LoginPageState extends State<LoginPage>
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // App icon/logo
+                            // App logo
                             Container(
-                              padding: const EdgeInsets.all(16),
+                              width: 100,
+                              height: 100,
+                              padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.indigo.shade100,
-                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.indigo.withOpacity(0.15),
+                                    blurRadius: 20,
+                                    spreadRadius: 0,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
                               ),
-                              child: Icon(
-                                Icons.inventory,
-                                size: 50,
-                                color: Colors.indigo.shade700,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.asset(
+                                  'images/tb.jpg',
+                                  width: 84,
+                                  height: 84,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    // Fallback to icon if image fails to load
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.indigo.shade100,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        Icons.inventory,
+                                        size: 40,
+                                        color: Colors.indigo.shade700,
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                             ),
                             const SizedBox(height: 24),
