@@ -16,14 +16,32 @@ class RiwayatPeminjamanView extends StatefulWidget {
 
 class _RiwayatPeminjamanViewState extends State<RiwayatPeminjamanView> {
   List<Peminjaman> _peminjaman = [];
+  List<Peminjaman> _filteredPeminjaman = [];
   bool _isLoading = true;
   String _errorMessage = '';
-  Map<int, BarangModel> _barangCache = {};
+  final Map<int, BarangModel> _barangCache = {};
+  String _selectedStatus = 'Semua'; // Filter status
+  final TextEditingController _searchController = TextEditingController();
+
+  // List status yang tersedia untuk filter
+  final List<String> _statusOptions = [
+    'Semua',
+    'pending',
+    'approved',
+    'rejected',
+    'returned',
+  ];
 
   @override
   void initState() {
     super.initState();
     _fetchPeminjaman();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   // Fungsi untuk mengambil data peminjaman
@@ -73,8 +91,10 @@ class _RiwayatPeminjamanViewState extends State<RiwayatPeminjamanView> {
       if (mounted) {
         setState(() {
           _peminjaman = peminjaman;
+          _filteredPeminjaman = peminjaman; // Initialize filtered list
           _isLoading = false;
         });
+        _applyFilters(); // Apply current filters
       }
     } catch (e) {
       if (mounted) {
@@ -126,6 +146,61 @@ class _RiwayatPeminjamanViewState extends State<RiwayatPeminjamanView> {
 
     // Fallback ke ID barang jika tidak ada informasi nama
     return 'Barang #$barangId';
+  }
+
+  // Fungsi untuk menerapkan filter
+  void _applyFilters() {
+    setState(() {
+      _filteredPeminjaman = _peminjaman.where((peminjaman) {
+        // Filter berdasarkan status
+        bool statusMatch = _selectedStatus == 'Semua' ||
+            peminjaman.status.toLowerCase() == _selectedStatus.toLowerCase();
+
+        // Filter berdasarkan pencarian
+        bool searchMatch = _searchController.text.isEmpty ||
+            _getBarangName(peminjaman.barangId, peminjaman: peminjaman)
+                .toLowerCase()
+                .contains(_searchController.text.toLowerCase()) ||
+            peminjaman.namaPeminjam
+                .toLowerCase()
+                .contains(_searchController.text.toLowerCase());
+
+        return statusMatch && searchMatch;
+      }).toList();
+    });
+  }
+
+  // Fungsi untuk mengubah filter status
+  void _onStatusFilterChanged(String? newStatus) {
+    if (newStatus != null) {
+      setState(() {
+        _selectedStatus = newStatus;
+      });
+      _applyFilters();
+    }
+  }
+
+  // Fungsi untuk pencarian
+  void _onSearchChanged(String query) {
+    _applyFilters();
+  }
+
+  // Fungsi untuk mendapatkan label status yang lebih friendly
+  String _getStatusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'semua':
+        return 'Semua Status';
+      case 'pending':
+        return 'Menunggu';
+      case 'approved':
+        return 'Disetujui';
+      case 'rejected':
+        return 'Ditolak';
+      case 'returned':
+        return 'Dikembalikan';
+      default:
+        return status;
+    }
   }
 
   @override
@@ -184,6 +259,104 @@ class _RiwayatPeminjamanViewState extends State<RiwayatPeminjamanView> {
                           color: Colors.grey.shade700,
                         ),
                       ),
+                      const SizedBox(height: 16),
+
+                      // Search Bar
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: _onSearchChanged,
+                          decoration: InputDecoration(
+                            hintText:
+                                'Cari berdasarkan nama barang atau peminjam...',
+                            hintStyle: TextStyle(color: Colors.grey.shade500),
+                            prefixIcon: Icon(Icons.search,
+                                color: Colors.indigo.shade700),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: Icon(Icons.clear,
+                                        color: Colors.grey.shade600),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      _onSearchChanged('');
+                                    },
+                                  )
+                                : null,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Filter Row
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.filter_list,
+                            color: Colors.indigo.shade700,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Filter:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Container(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _selectedStatus,
+                                  isExpanded: true,
+                                  icon: Icon(Icons.arrow_drop_down,
+                                      color: Colors.indigo.shade700),
+                                  style: TextStyle(
+                                    color: Colors.grey.shade800,
+                                    fontSize: 14,
+                                  ),
+                                  items: _statusOptions.map((String status) {
+                                    return DropdownMenuItem<String>(
+                                      value: status,
+                                      child: Text(_getStatusLabel(status)),
+                                    );
+                                  }).toList(),
+                                  onChanged: _onStatusFilterChanged,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -229,7 +402,7 @@ class _RiwayatPeminjamanViewState extends State<RiwayatPeminjamanView> {
                                 ],
                               ),
                             )
-                          : _peminjaman.isEmpty
+                          : _filteredPeminjaman.isEmpty
                               ? Center(
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -241,32 +414,65 @@ class _RiwayatPeminjamanViewState extends State<RiwayatPeminjamanView> {
                                       ),
                                       const SizedBox(height: 16),
                                       Text(
-                                        'Belum ada riwayat peminjaman',
+                                        _peminjaman.isEmpty
+                                            ? 'Belum ada riwayat peminjaman'
+                                            : 'Tidak ada data yang sesuai dengan filter',
                                         style: TextStyle(
                                           color: Colors.grey.shade700,
                                           fontSize: 16,
                                         ),
+                                        textAlign: TextAlign.center,
                                       ),
                                     ],
                                   ),
                                 )
                               : RefreshIndicator(
                                   onRefresh: _fetchPeminjaman,
-                                  child: GridView.builder(
-                                    padding: const EdgeInsets.all(16),
-                                    gridDelegate:
-                                        const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2, // 2 cards per row
-                                      childAspectRatio:
-                                          0.85, // Adjust for card height
-                                      crossAxisSpacing:
-                                          10, // Horizontal spacing
-                                      mainAxisSpacing: 10, // Vertical spacing
-                                    ),
-                                    itemCount: _peminjaman.length,
-                                    itemBuilder: (context, index) {
-                                      final pinjam = _peminjaman[index];
-                                      return _buildPeminjamanCard(pinjam);
+                                  child: LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      // Calculate responsive values based on screen width
+                                      final screenWidth =
+                                          MediaQuery.of(context).size.width;
+
+                                      // Determine number of columns based on screen width
+                                      int crossAxisCount =
+                                          2; // Default for most phones
+                                      if (screenWidth < 360) {
+                                        crossAxisCount =
+                                            1; // Very small phones - single column
+                                      } else if (screenWidth >= 600) {
+                                        crossAxisCount =
+                                            3; // Tablets - 3 columns
+                                      } else if (screenWidth >= 900) {
+                                        crossAxisCount =
+                                            4; // Large tablets/small desktops - 4 columns
+                                      }
+
+                                      // Calculate dynamic aspect ratio based on available width
+                                      final itemWidth = (constraints.maxWidth -
+                                              (16 * 2) -
+                                              ((crossAxisCount - 1) * 10)) /
+                                          crossAxisCount;
+                                      final aspectRatio = itemWidth /
+                                          (itemWidth *
+                                              1.3); // Adjust multiplier for desired height
+
+                                      return GridView.builder(
+                                        padding: const EdgeInsets.all(16),
+                                        gridDelegate:
+                                            SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: crossAxisCount,
+                                          childAspectRatio: aspectRatio,
+                                          crossAxisSpacing: 10,
+                                          mainAxisSpacing: 10,
+                                        ),
+                                        itemCount: _filteredPeminjaman.length,
+                                        itemBuilder: (context, index) {
+                                          final pinjam =
+                                              _filteredPeminjaman[index];
+                                          return _buildPeminjamanCard(pinjam);
+                                        },
+                                      );
                                     },
                                   ),
                                 ),
@@ -279,115 +485,188 @@ class _RiwayatPeminjamanViewState extends State<RiwayatPeminjamanView> {
     );
   }
 
-  // Widget untuk menampilkan card peminjaman
+  // Widget untuk menampilkan card peminjaman dengan desain yang lebih modern
   Widget _buildPeminjamanCard(Peminjaman pinjam) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 360;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Status chip
+            // Header dengan status dan tanggal
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 4,
-              ),
+              width: double.infinity,
+              padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
               decoration: BoxDecoration(
-                color: _getStatusColor(pinjam.status).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _getStatusColor(pinjam.status),
-                  width: 1,
+                gradient: LinearGradient(
+                  colors: [
+                    _getStatusColor(pinjam.status).withOpacity(0.1),
+                    _getStatusColor(pinjam.status).withOpacity(0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
               ),
-              child: Text(
-                pinjam.status.toUpperCase(),
-                style: TextStyle(
-                  color: _getStatusColor(pinjam.status),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Nama barang
-            Text(
-              _getBarangName(pinjam.barangId, peminjaman: pinjam),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-
-            const Spacer(),
-
-            // Tanggal
-            Text(
-              _formatDate(pinjam.tanggalPinjam),
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 12,
-              ),
-            ),
-
-            const SizedBox(height: 4),
-
-            // Jumlah
-            Row(
-              children: [
-                Icon(
-                  Icons.numbers,
-                  size: 14,
-                  color: Colors.grey.shade600,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Jumlah: ${pinjam.jumlah}',
-                  style: TextStyle(
-                    color: Colors.grey.shade700,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 4),
-
-            // Peminjam
-            Row(
-              children: [
-                Icon(
-                  Icons.person,
-                  size: 14,
-                  color: Colors.grey.shade600,
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    'Peminjam: ${pinjam.namaPeminjam}',
-                    style: TextStyle(
-                      color: Colors.grey.shade700,
-                      fontSize: 12,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Status chip
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isSmallScreen ? 8 : 10,
+                      vertical: isSmallScreen ? 4 : 6,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(pinjam.status),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      _getStatusLabel(pinjam.status),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: isSmallScreen ? 10 : 11,
+                      ),
+                    ),
                   ),
+                  // Tanggal
+                  Text(
+                    _formatDate(pinjam.tanggalPinjam),
+                    style: TextStyle(
+                      color: _getStatusColor(pinjam.status),
+                      fontSize: isSmallScreen ? 10 : 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Content
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Nama barang
+                    Text(
+                      _getBarangName(pinjam.barangId, peminjaman: pinjam),
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 14 : 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    SizedBox(height: isSmallScreen ? 8 : 10),
+
+                    // Info rows
+                    _buildInfoRow(
+                      Icons.inventory_2_outlined,
+                      'Jumlah',
+                      '${pinjam.jumlah} unit',
+                      isSmallScreen,
+                    ),
+
+                    SizedBox(height: isSmallScreen ? 4 : 6),
+
+                    _buildInfoRow(
+                      Icons.person_outline,
+                      'Peminjam',
+                      pinjam.namaPeminjam,
+                      isSmallScreen,
+                    ),
+
+                    if (pinjam.tanggalKembali.isNotEmpty) ...[
+                      SizedBox(height: isSmallScreen ? 4 : 6),
+                      _buildInfoRow(
+                        Icons.event_available_outlined,
+                        'Tgl Kembali',
+                        _formatDate(pinjam.tanggalKembali),
+                        isSmallScreen,
+                      ),
+                    ],
+
+                    const Spacer(),
+
+                    // Alasan meminjam (jika ada ruang)
+                    if (pinjam.alasanMeminjam.isNotEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '"${pinjam.alasanMeminjam}"',
+                          style: TextStyle(
+                            fontSize: isSmallScreen ? 10 : 11,
+                            color: Colors.grey.shade700,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  // Helper widget untuk info rows
+  Widget _buildInfoRow(
+      IconData icon, String label, String value, bool isSmallScreen) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: isSmallScreen ? 14 : 16,
+          color: Colors.indigo.shade600,
+        ),
+        SizedBox(width: isSmallScreen ? 6 : 8),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: TextStyle(
+                fontSize: isSmallScreen ? 11 : 12,
+                color: Colors.grey.shade700,
+              ),
+              children: [
+                TextSpan(
+                  text: '$label: ',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                TextSpan(text: value),
+              ],
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }

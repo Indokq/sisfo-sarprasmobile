@@ -6,6 +6,7 @@ class Peminjaman {
   final String alasanMeminjam;
   final int jumlah;
   final String tanggalPinjam;
+  final String tanggalKembali; // Tambahkan field tanggal kembali
   final String status;
   final String? namaBarang; // Tambahkan field untuk nama barang
 
@@ -17,6 +18,7 @@ class Peminjaman {
     required this.alasanMeminjam,
     required this.jumlah,
     required this.tanggalPinjam,
+    required this.tanggalKembali, // Required field untuk tanggal kembali
     required this.status,
     this.namaBarang, // Opsional, mungkin tidak selalu tersedia dari API
   });
@@ -42,6 +44,8 @@ class Peminjaman {
       alasanMeminjam: json['alasan_meminjam'],
       jumlah: json['jumlah'],
       tanggalPinjam: json['tanggal_pinjam'],
+      tanggalKembali:
+          json['tanggal_kembali'] ?? '', // Tambahkan field tanggal kembali
       status: json['status'],
       namaBarang: namaBarang,
     );
