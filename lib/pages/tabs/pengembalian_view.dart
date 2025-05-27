@@ -27,7 +27,7 @@ class _PengembalianViewState extends State<PengembalianView> {
   void initState() {
     super.initState();
     _fetchPeminjaman();
-    // Set tanggal hari ini sebagai default
+    // Set tanggal hari ini sebagai default untuk tanggal pengembalian
     tanggalController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
   }
 
@@ -50,12 +50,29 @@ class _PengembalianViewState extends State<PengembalianView> {
           await PeminjamanService.fetchPeminjaman(widget.token);
 
       // Filter peminjaman yang statusnya bukan 'returned', 'completed', atau 'rejected'
-      final activePeminjaman = fetchedPeminjaman
-          .where((p) =>
-              p.status.toLowerCase() != 'returned' &&
-              p.status.toLowerCase() != 'completed' &&
-              p.status.toLowerCase() != 'rejected')
-          .toList();
+      // dan masih dalam batas waktu 7 hari
+      final activePeminjaman = fetchedPeminjaman.where((p) {
+        // Filter berdasarkan status
+        if (p.status.toLowerCase() == 'returned' ||
+            p.status.toLowerCase() == 'completed' ||
+            p.status.toLowerCase() == 'rejected') {
+          return false;
+        }
+
+        // Filter berdasarkan batas waktu 7 hari
+        try {
+          final DateTime pinjamDate = DateTime.parse(p.tanggalPinjam);
+          final DateTime kembaliDate = pinjamDate.add(const Duration(days: 7));
+          final DateTime today = DateTime.now();
+
+          // Hanya tampilkan jika masih dalam batas waktu
+          return today.isBefore(kembaliDate) ||
+              today.isAtSameMomentAs(kembaliDate);
+        } catch (e) {
+          // Jika error parsing tanggal, tetap tampilkan untuk safety
+          return true;
+        }
+      }).toList();
 
       if (!mounted) return;
 
@@ -82,11 +99,12 @@ class _PengembalianViewState extends State<PengembalianView> {
   }
 
   Future<void> _selectTanggal() async {
+    final DateTime today = DateTime.now();
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
+      initialDate: today, // Default ke hari ini
+      firstDate: today, // Cuma bisa pilih hari ini atau setelahnya
+      lastDate: today, // Maksimal hari ini (jadi cuma bisa pilih hari ini)
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -123,6 +141,55 @@ class _PengembalianViewState extends State<PengembalianView> {
       return;
     }
 
+    // Validasi tanggal pengembalian harus hari ini
+    final String todayString = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    if (tanggal != todayString) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('❌ Tanggal pengembalian harus hari ini!'),
+          backgroundColor: Colors.red.shade700,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    // Check if return is within 7-day limit
+    try {
+      final DateTime pinjamDate =
+          DateTime.parse(selectedPeminjaman!.tanggalPinjam);
+      final DateTime kembaliDate = pinjamDate.add(const Duration(days: 7));
+      final DateTime today = DateTime.now();
+
+      if (today.isAfter(kembaliDate)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('❌ Batas waktu pengembalian telah habis!'),
+                Text(
+                    'Batas: ${DateFormat('dd MMMM yyyy', 'id_ID').format(kembaliDate)}'),
+                const Text('Barang tidak dapat dikembalikan setelah 7 hari.'),
+              ],
+            ),
+            backgroundColor: Colors.red.shade700,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+        return;
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: Format tanggal peminjaman tidak valid'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() => isLoading = true);
 
     try {
@@ -142,7 +209,7 @@ class _PengembalianViewState extends State<PengembalianView> {
             content: Text('Berhasil! ID Pengembalian: ${pengembalian.id}')),
       );
 
-      // Reset form
+      // Reset form dengan tanggal hari ini sebagai default
       jumlahController.clear();
       keteranganController.text = '';
       tanggalController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -283,7 +350,7 @@ class _PengembalianViewState extends State<PengembalianView> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Tidak ada peminjaman aktif yang dapat dikembalikan',
+                                    'Tidak ada peminjaman yang dapat dikembalikan',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       color: Colors.orange.shade800,
@@ -292,7 +359,7 @@ class _PengembalianViewState extends State<PengembalianView> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Peminjaman dengan status "rejected" tidak dapat dikembalikan',
+                                    'Barang hanya dapat dikembalikan dalam 7 hari setelah tanggal pinjam',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       color: Colors.orange.shade700,
@@ -368,7 +435,10 @@ class _PengembalianViewState extends State<PengembalianView> {
                     onTap: peminjamanList.isNotEmpty ? _selectTanggal : null,
                     decoration: InputDecoration(
                       labelText: 'Tanggal Pengembalian',
+                      hintText: 'Hanya bisa hari ini',
                       labelStyle: TextStyle(color: Colors.grey[700]),
+                      hintStyle:
+                          TextStyle(color: Colors.grey[500], fontSize: 12),
                       prefixIcon: Icon(Icons.event, color: primaryColor),
                       suffixIcon:
                           Icon(Icons.calendar_today, color: primaryColor),
@@ -384,6 +454,37 @@ class _PengembalianViewState extends State<PengembalianView> {
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 16),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Info box tentang tanggal pengembalian
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.blue.shade700,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Tanggal pengembalian hanya bisa hari ini untuk mencegah manipulasi data',
+                            style: TextStyle(
+                              color: Colors.blue.shade700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 24),

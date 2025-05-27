@@ -16,6 +16,7 @@ class PeminjamanService {
     required int barangId,
     required int jumlah,
     required String tanggalPinjam,
+    required String tanggalKembali,
     required String status,
   }) async {
     final int? userId = await AuthService().getUserId();
@@ -37,6 +38,7 @@ class PeminjamanService {
         'alasan_meminjam': alasanMeminjam,
         'jumlah': jumlah,
         'tanggal_pinjam': tanggalPinjam,
+        'tanggal_kembali': tanggalKembali,
         'status': status,
       }),
     );

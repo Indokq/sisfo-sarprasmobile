@@ -168,15 +168,33 @@ class _LoginPageState extends State<LoginPage>
                           children: [
                             // App icon/logo
                             Container(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                color: Colors.indigo.shade100,
+                                color: Colors.white,
                                 shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 10,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
                               ),
-                              child: Icon(
-                                Icons.inventory,
-                                size: 50,
-                                color: Colors.indigo.shade700,
+                              child: ClipOval(
+                                child: Image.asset(
+                                  'image/logo.png',
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    // Fallback ke icon jika logo ga bisa dimuat
+                                    return Icon(
+                                      Icons.inventory,
+                                      size: 80,
+                                      color: Colors.indigo.shade700,
+                                    );
+                                  },
+                                ),
                               ),
                             ),
                             const SizedBox(height: 24),
