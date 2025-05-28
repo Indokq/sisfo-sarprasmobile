@@ -81,6 +81,19 @@ class _PeminjamanViewState extends State<PeminjamanView> {
       return;
     }
 
+    // Hitung tanggal kembali otomatis (7 hari setelah tanggal pinjam)
+    String tanggalKembali;
+    try {
+      final DateTime pinjamDate = DateTime.parse(tanggal);
+      final DateTime kembaliDate = pinjamDate.add(const Duration(days: 7));
+      tanggalKembali = DateFormat('yyyy-MM-dd').format(kembaliDate);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Format tanggal tidak valid')),
+      );
+      return;
+    }
+
     setState(() => isLoading = true);
 
     try {
@@ -91,13 +104,26 @@ class _PeminjamanViewState extends State<PeminjamanView> {
         barangId: selectedBarang!.id, // Use selectedBarang's ID
         jumlah: jumlah,
         tanggalPinjam: tanggal,
+        tanggalKembali:
+            tanggalKembali, // Otomatis 7 hari setelah tanggal pinjam
         status: 'pending', // Add status as pending
       );
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Berhasil! ID Peminjaman: ${peminjaman.id}')),
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('✅ Peminjaman berhasil diajukan!'),
+              Text('ID: ${peminjaman.id}'),
+              Text('Batas kembali: ${_getReturnDate()}'),
+            ],
+          ),
+          duration: const Duration(seconds: 4),
+        ),
       );
 
       namaController.clear();
@@ -132,6 +158,20 @@ class _PeminjamanViewState extends State<PeminjamanView> {
 
     if (picked != null && mounted) {
       tanggalController.text = DateFormat('yyyy-MM-dd').format(picked);
+      setState(() {}); // Refresh UI to show return date
+    }
+  }
+
+  // Helper method untuk mendapatkan tanggal kembali yang dihitung otomatis
+  String _getReturnDate() {
+    if (tanggalController.text.isEmpty) return '-';
+
+    try {
+      final DateTime pinjamDate = DateTime.parse(tanggalController.text);
+      final DateTime kembaliDate = pinjamDate.add(const Duration(days: 7));
+      return DateFormat('dd MMMM yyyy', 'id_ID').format(kembaliDate);
+    } catch (e) {
+      return '-';
     }
   }
 
@@ -372,6 +412,72 @@ class _PeminjamanViewState extends State<PeminjamanView> {
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 16),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Info tanggal kembali otomatis
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.blue.shade700,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Tanggal Kembali Otomatis',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue.shade700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Barang harus dikembalikan dalam 7 hari setelah tanggal pinjam. Setelah itu, barang tidak dapat dikembalikan.',
+                                style: TextStyle(
+                                  color: Colors.blue.shade600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              if (tanggalController.text.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade100,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'Tanggal kembali: ${_getReturnDate()}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.blue.shade800,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 32),
