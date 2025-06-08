@@ -49,20 +49,15 @@ class _PengembalianViewState extends State<PengembalianView> {
       final List<Peminjaman> fetchedPeminjaman =
           await PeminjamanService.fetchPeminjaman(widget.token);
 
-      // Filter peminjaman yang statusnya bukan 'returned', 'completed', atau 'rejected'
-      // dan masih dalam batas waktu 7 hari
       final activePeminjaman = fetchedPeminjaman.where((p) {
-        // Filter berdasarkan status
-        if (p.status.toLowerCase() == 'returned' ||
-            p.status.toLowerCase() == 'completed' ||
-            p.status.toLowerCase() == 'rejected') {
+        // Filter berdasarkan status - HANYA APPROVED yang bisa dikembalikan
+        if (p.status.toLowerCase() != 'approved') {
           return false;
         }
 
-        // Filter berdasarkan batas waktu 7 hari
         try {
           final DateTime pinjamDate = DateTime.parse(p.tanggalPinjam);
-          final DateTime kembaliDate = pinjamDate.add(const Duration(days: 7));
+          final DateTime kembaliDate = pinjamDate.add(const Duration(days: 1));
           final DateTime today = DateTime.now();
 
           // Hanya tampilkan jika masih dalam batas waktu
@@ -80,6 +75,11 @@ class _PengembalianViewState extends State<PengembalianView> {
         peminjamanList = activePeminjaman;
         if (peminjamanList.isNotEmpty) {
           selectedPeminjaman = peminjamanList[0]; // Set default selected item
+          // Auto-fill jumlah dengan jumlah yang dipinjam untuk item pertama
+          jumlahController.text = peminjamanList[0].jumlah.toString();
+        } else {
+          selectedPeminjaman = null;
+          jumlahController.clear();
         }
       });
     } catch (e) {
@@ -141,6 +141,36 @@ class _PengembalianViewState extends State<PengembalianView> {
       return;
     }
 
+    // Validasi jumlah harus sama dengan jumlah yang dipinjam
+    if (jumlah != selectedPeminjaman!.jumlah) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '❌ Jumlah pengembalian tidak valid!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                'Jumlah dikembalikan: $jumlah',
+              ),
+              Text(
+                'Jumlah yang dipinjam: ${selectedPeminjaman!.jumlah}',
+              ),
+              const Text(
+                'Jumlah pengembalian harus sama dengan jumlah peminjaman.',
+              ),
+            ],
+          ),
+          backgroundColor: Colors.red.shade600,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     // Validasi tanggal pengembalian harus hari ini
     final String todayString = DateFormat('yyyy-MM-dd').format(DateTime.now());
     if (tanggal != todayString) {
@@ -154,11 +184,10 @@ class _PengembalianViewState extends State<PengembalianView> {
       return;
     }
 
-    // Check if return is within 7-day limit
     try {
       final DateTime pinjamDate =
           DateTime.parse(selectedPeminjaman!.tanggalPinjam);
-      final DateTime kembaliDate = pinjamDate.add(const Duration(days: 7));
+      final DateTime kembaliDate = pinjamDate.add(const Duration(days: 1));
       final DateTime today = DateTime.now();
 
       if (today.isAfter(kembaliDate)) {
@@ -170,8 +199,8 @@ class _PengembalianViewState extends State<PengembalianView> {
               children: [
                 const Text('❌ Batas waktu pengembalian telah habis!'),
                 Text(
-                    'Batas: ${DateFormat('dd MMMM yyyy', 'id_ID').format(kembaliDate)}'),
-                const Text('Barang tidak dapat dikembalikan setelah 7 hari.'),
+                    'Batas: ${DateFormat('dd MMMM yyyy').format(kembaliDate)}'),
+                const Text('Barang tidak dapat dikembalikan setelah 1 hari.'),
               ],
             ),
             backgroundColor: Colors.red.shade700,
@@ -359,7 +388,7 @@ class _PengembalianViewState extends State<PengembalianView> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Barang hanya dapat dikembalikan dalam 7 hari setelah tanggal pinjam',
+                                    'Hanya peminjaman yang sudah disetujui (APPROVED) dan dalam 1 hari setelah tanggal pinjam yang dapat dikembalikan',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       color: Colors.orange.shade700,
@@ -410,6 +439,13 @@ class _PengembalianViewState extends State<PengembalianView> {
                                   onChanged: (Peminjaman? newValue) {
                                     setState(() {
                                       selectedPeminjaman = newValue;
+                                      // Auto-fill jumlah dengan jumlah yang dipinjam
+                                      if (newValue != null) {
+                                        jumlahController.text =
+                                            newValue.jumlah.toString();
+                                      } else {
+                                        jumlahController.clear();
+                                      }
                                     });
                                   },
                                 ),
@@ -421,11 +457,91 @@ class _PengembalianViewState extends State<PengembalianView> {
                   TextField(
                     controller: jumlahController,
                     keyboardType: TextInputType.number,
+                    readOnly: true, // Make it read-only to prevent manipulation
                     enabled: peminjamanList.isNotEmpty,
-                    decoration: buildInputDecoration(
-                        'Jumlah Dikembalikan', Icons.numbers),
+                    decoration: InputDecoration(
+                      labelText: 'Jumlah Dikembalikan',
+                      hintText: selectedPeminjaman != null
+                          ? 'Otomatis sesuai jumlah pinjam: ${selectedPeminjaman!.jumlah} unit'
+                          : 'Pilih peminjaman terlebih dahulu',
+                      labelStyle: TextStyle(color: Colors.grey[700]),
+                      hintStyle:
+                          TextStyle(color: Colors.grey[500], fontSize: 12),
+                      prefixIcon:
+                          Icon(Icons.numbers, color: Colors.indigo.shade700),
+                      suffixIcon: Icon(
+                        Icons.lock_outline,
+                        color: Colors.grey[600],
+                        size: 20,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey
+                          .shade100, // Different color to show it's read-only
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide:
+                            BorderSide(color: Colors.indigo.shade700, width: 2),
+                      ),
+                      disabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 16),
+                    ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
+
+                  // Info box tentang jumlah pengembalian
+                  if (selectedPeminjaman != null)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.green.shade700,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Jumlah Pengembalian Otomatis',
+                                  style: TextStyle(
+                                    color: Colors.green.shade700,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Jumlah dikembalikan otomatis sama dengan jumlah yang dipinjam (${selectedPeminjaman!.jumlah} unit) untuk mencegah manipulasi data.',
+                                  style: TextStyle(
+                                    color: Colors.green.shade600,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (selectedPeminjaman != null) const SizedBox(height: 24),
+                  if (selectedPeminjaman == null) const SizedBox(height: 24),
 
                   // Tanggal
                   TextField(

@@ -81,11 +81,68 @@ class _PeminjamanViewState extends State<PeminjamanView> {
       return;
     }
 
+    // Validasi stok barang
+    if (jumlah > selectedBarang!.jumlahTersedia) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '❌ Stok tidak mencukupi!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                'Jumlah yang diminta: $jumlah',
+              ),
+              Text(
+                'Stok tersedia: ${selectedBarang!.jumlahTersedia}',
+              ),
+              const Text(
+                'Silakan kurangi jumlah peminjaman atau pilih barang lain.',
+              ),
+            ],
+          ),
+          backgroundColor: Colors.red.shade600,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+      return;
+    }
+
+    // Validasi jika stok habis
+    if (selectedBarang!.jumlahTersedia <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '❌ Barang tidak tersedia!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                'Barang "${selectedBarang!.namaBarang}" sedang tidak tersedia.',
+              ),
+              const Text(
+                'Silakan pilih barang lain.',
+              ),
+            ],
+          ),
+          backgroundColor: Colors.red.shade600,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     // Hitung tanggal kembali otomatis (7 hari setelah tanggal pinjam)
     String tanggalKembali;
     try {
       final DateTime pinjamDate = DateTime.parse(tanggal);
-      final DateTime kembaliDate = pinjamDate.add(const Duration(days: 7));
+      final DateTime kembaliDate = pinjamDate.add(const Duration(days: 1));
       tanggalKembali = DateFormat('yyyy-MM-dd').format(kembaliDate);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -168,8 +225,9 @@ class _PeminjamanViewState extends State<PeminjamanView> {
 
     try {
       final DateTime pinjamDate = DateTime.parse(tanggalController.text);
-      final DateTime kembaliDate = pinjamDate.add(const Duration(days: 7));
-      return DateFormat('dd MMMM yyyy', 'id_ID').format(kembaliDate);
+      final DateTime kembaliDate = pinjamDate.add(const Duration(days: 1));
+      // Gunakan format tanggal tanpa locale khusus untuk menghindari error
+      return DateFormat('dd MMMM yyyy').format(kembaliDate);
     } catch (e) {
       return '-';
     }
@@ -322,11 +380,47 @@ class _PeminjamanViewState extends State<PeminjamanView> {
                             items: barangList.map((BarangModel barang) {
                               return DropdownMenuItem<BarangModel>(
                                 value: barang,
-                                child: Text(
-                                  barang.namaBarang,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                  ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        barang.namaBarang,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: barang.jumlahTersedia > 0
+                                            ? Colors.green.shade100
+                                            : Colors.red.shade100,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: barang.jumlahTersedia > 0
+                                              ? Colors.green.shade300
+                                              : Colors.red.shade300,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'Stok: ${barang.jumlahTersedia}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: barang.jumlahTersedia > 0
+                                              ? Colors.green.shade700
+                                              : Colors.red.shade700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               );
                             }).toList(),
@@ -343,6 +437,67 @@ class _PeminjamanViewState extends State<PeminjamanView> {
                           ),
                         ),
                   const SizedBox(height: 16),
+
+                  // Info stok barang yang dipilih
+                  if (selectedBarang != null)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: selectedBarang!.jumlahTersedia > 0
+                            ? Colors.green.shade50
+                            : Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: selectedBarang!.jumlahTersedia > 0
+                              ? Colors.green.shade200
+                              : Colors.red.shade200,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            selectedBarang!.jumlahTersedia > 0
+                                ? Icons.check_circle_outline
+                                : Icons.warning_outlined,
+                            color: selectedBarang!.jumlahTersedia > 0
+                                ? Colors.green.shade600
+                                : Colors.red.shade600,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  selectedBarang!.namaBarang,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: selectedBarang!.jumlahTersedia > 0
+                                        ? Colors.green.shade700
+                                        : Colors.red.shade700,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  selectedBarang!.jumlahTersedia > 0
+                                      ? 'Stok tersedia: ${selectedBarang!.jumlahTersedia} unit'
+                                      : 'Stok habis - tidak dapat dipinjam',
+                                  style: TextStyle(
+                                    color: selectedBarang!.jumlahTersedia > 0
+                                        ? Colors.green.shade600
+                                        : Colors.red.shade600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (selectedBarang != null) const SizedBox(height: 16),
 
                   // Jumlah
                   TextField(
@@ -447,7 +602,7 @@ class _PeminjamanViewState extends State<PeminjamanView> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Barang harus dikembalikan dalam 7 hari setelah tanggal pinjam. Setelah itu, barang tidak dapat dikembalikan.',
+                                'Barang harus dikembalikan dalam 1 hari setelah tanggal pinjam. Setelah itu, barang tidak dapat dikembalikan.',
                                 style: TextStyle(
                                   color: Colors.blue.shade600,
                                   fontSize: 12,
